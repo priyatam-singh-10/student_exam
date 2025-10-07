@@ -18,7 +18,9 @@ Route::prefix('auth')->group(function () {
 Route::prefix('forms')->group(function () {
     Route::get('/', [FormController::class, 'index']);
     Route::get('{id}', [FormController::class, 'show']);
-    Route::middleware(['auth:api', 'role:admin'])->group(function () {
+});
+Route::prefix('admin/forms')->group(function () {
+    Route::middleware(['auth:api','admin'])->group(function () {
         Route::post('/', [FormController::class, 'store']);
         Route::put('{id}', [FormController::class, 'update']);
         Route::delete('{id}', [FormController::class, 'destroy']);

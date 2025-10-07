@@ -47,10 +47,14 @@ public function Register(Request $request)
 
 public function Login(Request $request)
 {
+
     $credentials = Validator::make($request->all(), [
         'email' => 'required|email',
         'password' => 'required|string',
     ]);
+    if ($credentials->fails()) {
+        return response()->json([$credentials->errors()], 422);
+    }
 
     if (!$token = auth('api')->attempt($credentials->validated())) {
         throw ValidationException::withMessages(['email' => 'Invalid credentials']);
@@ -66,6 +70,14 @@ public function Login(Request $request)
 public function MyProfile(Request $request)
 {
     $user = Auth::guard('api')->user();
+
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User not authenticated',
+        ], 401);
+    }
+
     return response()->json([
         'success' => 'true',
         'message' => 'User profile retrieved successfully',
@@ -73,10 +85,19 @@ public function MyProfile(Request $request)
     ]);
 }
 
+
 public function Logout()
 {
-    auth('api')->invalidate(true);
-    return response()->json(['message' => 'Logged out']);
+    // Properly invalidate JWT token for the api guard
+    try {
+        auth('api')->logout();
+    } catch (\Exception $e) {
+        // ignore if already invalid
+    }
+    return response()->json([
+        'success' => 'true',
+        'message' => 'Logged out'
+    ]);
 }
 
 }

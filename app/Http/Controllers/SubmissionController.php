@@ -53,7 +53,8 @@ public function store(Request $request)
     $submission = new Submission();
     $submission->user_id = $user->id;
     $submission->form_id = $request->form_id;
-    $submission->data = $request->data;
+        // Let Eloquent casting handle array -> json persistence
+        $submission->data = $request->data;
     $submission->status = $request->status ?? 'submitted';
     $submission->save();
 

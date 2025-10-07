@@ -73,6 +73,7 @@ public function initiate(Request $request)
         return response()->json([
             'success' => true,
             'message' => 'Razorpay order created successfully',
+            'payment' => $payment,
             'order' => [
                 'id' => $order['id'],
                 'amount' => $order['amount'] / 100, 
@@ -91,12 +92,6 @@ public function initiate(Request $request)
     }
 }
 
-public function stripeWebhook(Request $request)
-{
-    $providerPaymentId = $request->input('data.object.id');
-    $paymentId = $request->input('data.object.metadata.payment_id');
-    return $this->markSuccessAndGenerateReceipt((int)$paymentId, 'stripe', $providerPaymentId);
-}
 
 public function razorpayWebhook(Request $request)
 {
@@ -107,9 +102,11 @@ public function razorpayWebhook(Request $request)
 
 public function receipt(Request $request, $paymentId)
 {
-
-    $user = Auth::guard('api')->user();
-    $payment = Payment::where('user_id', $user->id)->find($paymentId)->first();
+        $user = Auth::guard('api')->user();
+        // Correct query: filter by user_id AND id together
+        $payment = Payment::where('user_id', $user->id)
+            ->where('id', $paymentId)
+            ->first();
     if (!$payment) {
      return response()->json([
             'success' => 'false',
@@ -156,7 +153,7 @@ public function sampleReceipt(Request $request)
     $user = $request->user();
     $receiptNumber = 'SAMPLE-'.date('Ymd-His');
     $path = 'receipts/'.$receiptNumber.'.pdf';
-    $userPayment  = Payment::where('user_id', $request->user()->id)->first();
+    $userPayment  = Payment::where('user_id', $request->user()->id)->latest()->first();
 
     $data = [
         'receipt_number' => $receiptNumber,
@@ -168,7 +165,7 @@ public function sampleReceipt(Request $request)
         'provider' => 'razorpay',
         'currency' => 'INR',
         'amount' => $userPayment->amount ?? 0,
-        'status' => 'succeeded',
+        'status' => $userPayment->status ?? 'Non',
     ];
     $pdfService = app(\App\Services\PdfService::class);
     $storedPath = $pdfService->generateReceipt($data, $path);

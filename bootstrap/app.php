@@ -12,7 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Register route middleware alias for admin role checks
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\AdminCheck::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
